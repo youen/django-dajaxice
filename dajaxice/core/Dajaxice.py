@@ -26,6 +26,7 @@ class DajaxiceModule(object):
             module = module.split('.')
         
         if len(module) == 2:
+            self.path = '.'.join(self.path.split('.')[:-1]) +'.' +  module[0]
             self.add_function(module[1])
         else:
             sub_module = self.exist_submodule(module[1])
