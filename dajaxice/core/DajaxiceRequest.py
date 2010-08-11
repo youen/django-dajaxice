@@ -75,8 +75,8 @@ class DajaxiceRequest(object):
     
     def __init__(self, request, call):
         call = call.rsplit('.',1)
-        self.app_name = call[0]
-        self.method = call[1]
+        self.app_name = '.'.join(call[:-1])
+        self.method = call[-1]
         self.request = request
         
         self.project_name = os.environ['DJANGO_SETTINGS_MODULE'].split('.')[0]
@@ -187,6 +187,7 @@ class DajaxiceRequest(object):
         Process the dajax request calling the apropiate method.
         """
         if self._is_callable():
+
             log.debug('Function %s is callable' % self.full_name)
             callback = self.request.POST.get('callback')
             
