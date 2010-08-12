@@ -7,7 +7,6 @@ log = logging.getLogger('dajaxice.DajaxiceRequest')
 
 class DajaxiceModule(object):
     def __init__(self, module , path=''):
-        print  path , module
         module = module.split('.')[0]
         if path == '':
             self.path = module
