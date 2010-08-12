@@ -6,15 +6,19 @@ from django.utils.importlib import import_module
 log = logging.getLogger('dajaxice.DajaxiceRequest')
 
 class DajaxiceModule(object):
-    def __init__(self, module, path):
-        self.path = path
+    def __init__(self, module , path=''):
+        print  path , module
+        module = module.split('.')[0]
+        if path == '':
+            self.path = module
+        else:
+            self.path = path + '.' + module
+        self.name = module
         self.functions = []
         self.sub_modules = []
         
-        module = module.split('.')
-        self.name = module[0]
-        self.add(module)
-    
+    def get_depth(self):
+        return len(self.path.split('.'))
     def add_function(self, function):
         self.functions.append(function)
     
@@ -24,24 +28,23 @@ class DajaxiceModule(object):
     def add(self, module):
         if not hasattr(module,'__iter__'):
             module = module.split('.')
-        
-        if len(module) == 2:
-            self.path = '.'.join(self.path.split('.')[:-1]) +'.' +  module[0]
-            self.add_function(module[1])
+
+        if module[0] == self.name :
+            self.add(module[1:])
+
+        elif len(module) == 1:
+            self.add_function(module[0])
         else:
-            sub_module = self.exist_submodule(module[1])
-            module = '.'.join(module[1:])
-            
-            if type(sub_module) == int:
-                self.sub_modules[sub_module].add(module)
-            else:
-                self.sub_modules.append(DajaxiceModule(module, self.path))
-        
-    def exist_submodule(self, name):
+            self.get_sub_module(module).add(module[1:])
+
+    def get_sub_module(self,module_list):
         for module in self.sub_modules:
-            if module.name == name:
-                return self.sub_modules.index(module)
-        return False
+            if module.name == module_list[0]:
+                return module
+
+        dm =  DajaxiceModule(module_list[0],self.path)
+        self.sub_modules.append(dm)
+        return dm
     
 class Dajaxice(object):
     def __init__(self):
@@ -70,7 +73,9 @@ class Dajaxice(object):
         if type(exist_module) == int:
             self._registry[exist_module].add(module)
         else:
-            self._registry.append(DajaxiceModule(module, module_without_ajax))
+            dm = DajaxiceModule( module_without_ajax)
+            dm.add(module)
+            self._registry.append(dm)
         
     def is_callable(self, name):
         return name in self._callable
