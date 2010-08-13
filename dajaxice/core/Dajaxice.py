@@ -8,46 +8,39 @@ log = logging.getLogger('dajaxice.DajaxiceRequest')
 class DajaxiceModule(object):
     def __init__(self, module , path=''):
         module = module.split('.')[0]
-        if path == '':
+        if path == '' or module == '':
             self.path = module
         else:
             self.path = path + '.' + module
         self.name = module
         self.functions = []
-        self.sub_modules = []
+        self.sub_modules = {}
         
-    def get_depth(self):
-        return len(self.path.split('.'))
-    def add_function(self, function):
-        self.functions.append(function)
-    
+   
+    def get_sub_modules(self):
+        return self.sub_modules.values()
+
     def has_sub_modules(self):
         return len(self.sub_modules) > 0
         
-    def add(self, module):
-        if not hasattr(module,'__iter__'):
-            module = module.split('.')
+    def add_function(self, function):
+        if not hasattr(function,'__iter__'):
+            function = function.split('.')
 
-        if module[0] == self.name :
-            self.add(module[1:])
+        if function[0] == self.name :
+            self.add_function(function[1:])
 
-        elif len(module) == 1:
-            self.add_function(module[0])
+        elif len(function) == 1:
+            self.functions.append(function[0])
         else:
-            self.get_sub_module(module).add(module[1:])
+            sub_module = self.sub_modules.get(function[0],DajaxiceModule(function[0],self.path))
+            sub_module.add_function(function[1:])
+            self.sub_modules[function[0]] = sub_module
 
-    def get_sub_module(self,module_list):
-        for module in self.sub_modules:
-            if module.name == module_list[0]:
-                return module
-
-        dm =  DajaxiceModule(module_list[0],self.path)
-        self.sub_modules.append(dm)
-        return dm
     
 class Dajaxice(object):
     def __init__(self):
-        self._registry = []
+        self._root_module = DajaxiceModule('')
         self._callable = []
         
         for function in getattr(settings, 'DAJAXICE_FUNCTIONS', ()):
@@ -66,27 +59,17 @@ class Dajaxice(object):
         self._callable.append(callable_function)
         
         module_without_ajax = module.replace('.ajax','')
-        module = '%s.%s' % (module_without_ajax, name)
+        function = '%s.%s' % (module_without_ajax, name)
         
-        exist_module = self._exist_module(module.split('.')[0])
-        if type(exist_module) == int:
-            self._registry[exist_module].add(module)
-        else:
-            dm = DajaxiceModule( module_without_ajax)
-            dm.add(module)
-            self._registry.append(dm)
+
+        self._root_module.add_function(function)
         
     def is_callable(self, name):
         return name in self._callable
         
-    def _exist_module(self,module_name):
-        for module in self._registry:
-            if module.name == module_name:
-                return self._registry.index(module)
-        return False
         
     def get_functions(self):
-        return self._registry
+        return self._root_module.sub_modules.values()
 
 LOADING_DAJAXICE = False
 

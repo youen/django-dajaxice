@@ -5,7 +5,7 @@
             }{% if not forloop.last %},{% endif %}
     {% endfor %}
             
-    {% for sub_module in module.sub_modules %}
+    {% for sub_module in module.get_sub_modules %}
     {% with "dajaxice/dajaxice_core_loop.js" as filename %}  
     {% with sub_module as module %}
         {% include filename %}
